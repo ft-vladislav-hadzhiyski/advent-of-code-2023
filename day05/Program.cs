@@ -1,6 +1,4 @@
 ﻿using System.Diagnostics;
-using System.IO.MemoryMappedFiles;
-using System.Xml.Xsl;
 
 var input = @"seeds: 194657215 187012821 1093203236 6077151 44187305 148722449 2959577030 152281079 3400626717 198691716 1333399202 287624830 2657325069 35258407 1913289352 410917164 1005856673 850939 839895010 162018909
 
@@ -227,7 +225,6 @@ foreach (var line in mapLines)
 
     var lineNumbers = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(long.Parse).ToList();
     maps[^1].Add(new Mapping(lineNumbers[1], lineNumbers[0], lineNumbers[2]));
-    //maps[^1].Sort(new MappingComparer());
 }
 
 {
@@ -282,51 +279,42 @@ foreach (var line in mapLines)
 
     var stopwatch = Stopwatch.StartNew();
 
-    var tasks = part2Seeds.Select(part2SeedValue => Task.Factory.StartNew((state) =>
-    {
-        var seed = (long)state * 1;
+    var part2SeedsTemp = new List<long>(part2Seeds);
+    var batch = 5_000_000;
 
-        var seedMaps = maps.SelectMany(m => m.Where(ms => ms.InRange(seed))).ToList();
-        foreach (var map in seedMaps)
+    Console.WriteLine("Total maps {0}", maps.Count);
+    for (var m = 0; m < maps.Count; m += 1)
+    {
+        Console.WriteLine($"Maps {m + 1} start");
+        Console.WriteLine("");
+        var map = maps[m];
+        for (var s = 0; s < part2SeedsTemp.Count; s += 1)
         {
-            var seedValue = map.Map(seed);
-            seed = seedValue;
+
+            if (s % batch == 0)
+            {
+                ConsoleUtils.ClearLine();
+                Console.WriteLine("Progress {0}%", Math.Round(s * 1.0 / part2SeedsTemp.Count * 100, 2));
+            }
+
+            var seed = part2SeedsTemp[s];
+            foreach (var cm in map)
+            {
+                if (cm.InRange(seed))
+                {
+                    var seedValue = cm.Map(seed);
+                    part2SeedsTemp[s] = seedValue;
+                    break;
+                }
+            }
         }
 
-        return seed;
-    }, part2SeedValue)).ToArray();
+        Console.WriteLine($"Maps {m + 1} finish");
+    }
 
-    Task.WaitAll(tasks);
     stopwatch.Stop();
 
-    var results = tasks.Select(task => task.Result).ToList();
-    Console.WriteLine("Task 2 = {0}", results.Min());
-    Console.WriteLine("Stopwatch = {0}", stopwatch.Elapsed);
-
-    // foreach (var map in maps)
-    // {
-    //     for (var i = 0; i < part2Seeds.Count; i += 1)
-    //     {
-    //         var seed = part2Seeds[i];
-    //         //Console.WriteLine($"Seed {seed}");
-    //         foreach (var cm in map)
-    //         {
-    //             if (cm.InRange(seed))
-    //             {
-    //                 var seedValue = cm.Map(seed);
-    //                 part2Seeds[i] = seedValue;
-    //                 //Console.WriteLine($"    mapped {seed} -> {seedValue}");
-    //                 break;
-    //             }
-    //             else
-    //             {
-    //                 //Console.WriteLine($"    not in range");
-    //             }
-    //         }
-    //     }
-    // }
-
-    //Console.WriteLine($"Task 2 = {part2Seeds.Min()}");
+    Console.WriteLine("Task 2 = {0}", part2SeedsTemp.Min());
+    Console.WriteLine("Task 2 Elapsed = {0}", stopwatch.Elapsed);
 }
 
-Console.ReadLine();

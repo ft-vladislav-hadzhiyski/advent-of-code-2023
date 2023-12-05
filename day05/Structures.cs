@@ -1,22 +1,3 @@
-using System.Diagnostics;
-
-class MappingComparer : IComparer<Mapping>
-{
-    public int Compare(Mapping? x, Mapping? y)
-    {
-        if (x.Source < y.Source)
-        {
-            return -1;
-        }
-        if (x.Source > y.Source)
-        {
-            return 1;
-        }
-
-        return 0;
-    }
-}
-
 class Mapping(long source, long destination, long length)
 {
     public long Source { get; } = source;
